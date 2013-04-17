@@ -25,12 +25,12 @@
                       (if (empty? found)
                         m
                         (-> (update-in m [from] #(remove compat? %))
-                            (update-in [to] concat (-> found first fix))))))
+                            (update-in [to] conj (-> found first fix))))))
 
         formmap   (-> (fixmap formmap :use :use-macros)
                       (fixmap :require :require-macros))
 
-        result    (map #(apply list %) formmap)]
+        result    (map #(apply cons %) formmap)]
 
     (if docstring
       (list* 'ns NAME docstring result)

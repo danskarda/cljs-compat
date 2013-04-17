@@ -78,6 +78,6 @@
                     (group-by first))
         decls  (map (fn [[t v]]
                       (->> (map second v)
-                           (list* 'dx.lang.macro-cljs/extend-type t NAME)))
+                           (list* 'cljs-compat.macro-cljs/extend-type t NAME)))
                     types)]
     `(do ~@decls)))
