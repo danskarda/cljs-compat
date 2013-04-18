@@ -1,5 +1,6 @@
 (ns cljs-compat.macro-cljs
-  "CLJS Compatibility macros. in-lang and macros for type compatibility (deftype)")
+  "CLJS Compatibility macros. in-lang and macros for type compatibility (deftype)"
+  (:require [cljs-compat.protocols :as proto]))
 
 ;;; in-lang macros
 
@@ -20,29 +21,12 @@
 
 ;;; type macros
 
-(defn simple-transformer
-  [& {:as MAP}]
-  (fn [_ [NAME & REST]]
-    (cons (get MAP NAME NAME) REST)))
-
-(def object-map
-  {:protocol       'Object,
-   :methods       {'equals           {:protocol 'IEquiv
-                                      :method   '-equiv}}})
-
-(def protocol-map
-  {'Object           object-map
-   'java.lang.Object object-map
-
-   'clojure.lang.ILookup
-   {:protocol       'ILookup
-    :methods        {'valAt           {:method   '-lookup}}}})
-
-(defn translate [PROTO [NAME & REST]]
-  (let [proto   (protocol-map PROTO)
-        meth    (-> proto :methods (get NAME))]
-    [(or (:protocol meth) (:protocol proto) PROTO)
-     (cons (or (:method meth) NAME) REST)]))
+(defn translate [PROTO [NAME & REST :as ORIG]]
+  (let [{:keys [method protocol append]} (proto/transmogrify PROTO NAME)]
+    (concat (if (and protocol method)
+              [[protocol (cons method REST)]]
+              [[PROTO ORIG]])
+            append)))
 
 (defn zip-headers
   [HEADER PRED? [H & REST :as SEQ]]
@@ -55,11 +39,18 @@
 (defn translate-type
   [SPECS]
   (->> (zip-headers nil symbol? SPECS)
-       (map #(apply translate %))
+       (mapcat #(apply translate %))
        (group-by first)
+       (sort-by key)
        (mapcat (fn [[proto specs]]
+                 (prn proto ">>>" specs)
                  (when specs
-                   (cons proto (map second specs)))))))
+                   (doto (map second specs)
+                     (->> (map first) prn))
+
+                   (->> (map second specs)
+                        (sort-by first)
+                        (cons proto)))))))
 
 (defmacro deftype [NAME FIELDS & REST]
   `(clojure.core/deftype ~NAME ~FIELDS
