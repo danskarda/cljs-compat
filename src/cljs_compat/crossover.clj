@@ -1,6 +1,20 @@
 (ns cljs-compat.crossover
   "Provide a cljsbuild transformers")
 
+(defn dot-macro?
+  "Returns if namespace ends with .macro"
+  [X]
+  (-> X name (.endsWith ".macro")))
+
+(defn maybe-cljs
+  "Returns clojurescript variant, if exists"
+  [X]
+  (try (let [xc (-> X name (str "-cljs") symbol)]
+         (require xc)
+         xc)
+       (catch Exception _
+         X)))
+
 (defn transform-ns-form
   [NAME & ARGS]
   (let [docstring (when (string? (first ARGS)) (first ARGS))
@@ -9,23 +23,21 @@
         formmap   (->> (group-by first forms)
                        (reduce-kv #(assoc %1 %2 (apply concat (map rest %3))) {}))
 
-        compat?   #(or (= % 'cljs-compat.macro)
-                       (and (coll? %) (= (first %) 'cljs-compat.macro)))
+        macro?   #(if (coll? %)
+                    (-> % first dot-macro?)
+                    (dot-macro? %))
 
-        fix       #(if (= % 'cljs-compat.macro)
-                     '[cljs-compat.macro-cljs :only [in-clj in-cljs
-                                                     in-cljs in-clojurescript
-                                                     deftype defrecord
-                                                     extend-type extend-protocol]]
-                     (cons 'cljs-compat.macro-cljs
-                           (rest %)))
+        fix-it    #(if (coll? %)
+                     (cons (-> % first maybe-cljs)
+                           (rest %))
+                     (maybe-cljs %))
 
         fixmap    (fn [m from to]
-                    (let [found (->> (get m from) (filter compat?))]
+                    (let [found (->> (get m from) (filter macro?))]
                       (if (empty? found)
                         m
-                        (-> (update-in m [from] #(remove compat? %))
-                            (update-in [to] conj (-> found first fix))))))
+                        (-> (update-in m [from] #(remove macro? %))
+                            (update-in [to] concat (map fix-it found))))))
 
         formmap   (-> (fixmap formmap :use :use-macros)
                       (fixmap :require :require-macros))

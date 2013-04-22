@@ -2,9 +2,8 @@
   (:use     clojure.test clojure.data)
   (:require [cljs-compat.macro-cljs :as tm]))
 
-
 (def form-deftype
-  '(tm/deftype FooBar [X]
+  '(cljs-compat.macro-cljs/deftype FooBar [X]
      clojure.lang.ILookup
      (valAt [T I] false)
      (valAt [T I D] D)
@@ -13,7 +12,7 @@
      (equals [X Y] false)))
 
 (def sortedseq-deftype
-  '(tm/deftype SomeSorted []
+  '(cljs-compat.macro-cljs/deftype SomeSorted []
      Ignored
      (should-be-left-untouched [X] nil)
 
@@ -24,7 +23,7 @@
      (seqFrom [SC KEY ASCENDING?] nil)))
 
 (def form-extend-protocol
-  '(tm/extend-protocol java.lang.Object
+  '(cljs-compat.macro-cljs/extend-protocol java.lang.Object
      FooBar
      (toString [x] x)
      (equals [x y] true)
@@ -47,7 +46,7 @@
 
 
   (is (= (macroexpand-1 sortedseq-deftype)
-         '(clojure.core/deftype SomeSorted []
+        '(clojure.core/deftype SomeSorted []
             Ignored
             (should-be-left-untouched [X] nil)
 

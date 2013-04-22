@@ -1,5 +1,6 @@
 (ns cljs-compat.macro-cljs
   "CLJS Compatibility macros. in-lang and macros for type compatibility (deftype)"
+  (:refer-clojure :exclude [deftype defrecord extend-type extend-protocol])
   (:require [cljs-compat.protocols :as proto]))
 
 ;;; in-lang macros
@@ -43,11 +44,7 @@
        (group-by first)
        (sort-by key)
        (mapcat (fn [[proto specs]]
-                 (prn proto ">>>" specs)
                  (when specs
-                   (doto (map second specs)
-                     (->> (map first) prn))
-
                    (->> (map second specs)
                         (sort-by first)
                         (cons proto)))))))
