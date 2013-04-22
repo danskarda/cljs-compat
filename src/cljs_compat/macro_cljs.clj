@@ -5,17 +5,17 @@
 
 ;;; in-lang macros
 
-(defmacro in-clj [BODY]
+(defmacro in-clj [& BODY]
   nil)
 
-(defmacro in-clojure [BODY]
+(defmacro in-clojure [& BODY]
   nil)
 
-(defmacro in-cljs [BODY]
-  BODY)
+(defmacro in-cljs [& BODY]
+  `(do ~@BODY))
 
-(defmacro in-clojurescript [BODY]
-  BODY)
+(defmacro in-clojurescript [& BODY]
+  `(do ~@BODY))
 
 (defmacro in-lang [& {:keys [cljs clojurescript]}]
   (or cljs clojurescript))

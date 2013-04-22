@@ -2,10 +2,16 @@
   "Language dependant macros"
   (:refer-clojure :exclude [deftype defrecord extend-type extend-protocol]))
 
-(defmacro in-clojure [BODY]
-  BODY)
+(defmacro in-clj [& BODY]
+  `(do ~@BODY))
 
-(defmacro in-clojurescript [BODY]
+(defmacro in-clojure [& BODY]
+  `(do ~@BODY))
+
+(defmacro in-cljs [& BODY]
+  nil)
+
+(defmacro in-clojurescript [& BODY]
   nil)
 
 (defmacro in-lang [& {:keys [clojure]}]
