@@ -110,7 +110,7 @@
     {count                      [ICounted -count]
      cons                       -conj
      empty                      [IEmptyableCollection -empty]
-     equiv                      [IEquiv -equiv]}
+     equiv                      {:method nil}}
 
     clojure.lang.Seqable
     {seq                        -seq}
@@ -119,7 +119,7 @@
     {nth                        -nth}
 
     clojure.lang.Associative
-    {containsKey                -contains-key
+    {containsKey                -contains-key?
      entryAt                    {:method nil}
      assoc                      -assoc}
 

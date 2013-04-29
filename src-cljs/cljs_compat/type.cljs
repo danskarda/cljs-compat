@@ -7,3 +7,5 @@
 
 ;;; queues
 (def empty-queue cljs.core.PersistentQueue/EMPTY)
+
+(def map-entry vec)
