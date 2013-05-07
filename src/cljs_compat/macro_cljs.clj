@@ -1,7 +1,8 @@
 (ns cljs-compat.macro-cljs
   "CLJS Compatibility macros. in-lang and macros for type compatibility (deftype)"
   (:refer-clojure :exclude [deftype defrecord extend-type extend-protocol])
-  (:require [cljs-compat.protocols :as proto]))
+  (:require [cljs-compat.protocols :as proto]
+            [cljs-compat.crossover :as cross]))
 
 ;;; in-lang macros
 
@@ -19,6 +20,18 @@
 
 (defmacro in-lang [& {:keys [cljs clojurescript]}]
   (or cljs clojurescript))
+
+;;; translate meta information
+
+(def ^:private meta-map
+  {:volatile-mutable    :mutable})
+
+(defn translate-meta [X]
+  (if-let [m (meta X)]
+    (->> (map (fn [[k v]] [(meta-map k k) v]) m)
+         (into {})
+         (with-meta X))
+    X))
 
 ;;; type macros
 
@@ -50,15 +63,15 @@
                         (cons proto)))))))
 
 (defmacro deftype [NAME FIELDS & REST]
-  `(clojure.core/deftype ~NAME ~FIELDS
+  `(clojure.core/deftype ~NAME ~(mapv translate-meta FIELDS)
      ~@(translate-type REST)))
 
 (defmacro defrecord [NAME FIELDS & REST]
-  `(clojure.core/defrecord ~NAME ~FIELDS
+  `(clojure.core/defrecord ~NAME ~(mapv translate-meta FIELDS)
      ~@(translate-type REST)))
 
 (defmacro extend-type [NAME & REST]
-  `(clojure.core/extend-type ~NAME
+  `(clojure.core/extend-type ~(cross/type-map NAME NAME)
      ~@(translate-type REST)))
 
 (defmacro extend-protocol [NAME & REST]
