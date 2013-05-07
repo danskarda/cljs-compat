@@ -30,7 +30,8 @@
   (->> SEQ
        (map #(let [[clj cljs] (if (coll? %) % [% %])]
                (vector (-> (str "clojure.lang." clj) symbol)
-                       (-> (str "cljs.core." cljs)   symbol))))
+                       (symbol "cljs.core" (str cljs))
+                       )))
        (into {})))
 
 (def protocol-map
@@ -50,7 +51,7 @@
                          [IPersistentVector IVector]
                          IDeref
                          IDerefWithTimeout
-                         IMeta
+                        IMeta
                          ;; IWithMeta
                          IReduce
                          IKVReduce
@@ -73,12 +74,12 @@
                          ITransientSet
                          IComparable])                  ; todo
 
-         '{Object                              Object,
-           java.lang.Object                    Object
+         '{Object                                       Object,
+           java.lang.Object                             Object
 
-           clojure.core.protocols.CollReduce            cljs.core.IReduce
-           clojure.core.protocols.InternalReduce        cljs.core.IReduce
-           clojure.core.protocols.IKVReduce             cljs.core.IKVReduce}))
+           clojure.core.protocols.CollReduce            IReduce
+           clojure.core.protocols.InternalReduce        IReduce
+           clojure.core.protocols.IKVReduce             IKVReduce}))
 
 (def protocol-method-map
   '{java.lang.Object
@@ -177,7 +178,7 @@
     {comparator                 -comparator
      entryKey                   -entry-key
      seqFrom                    {:method                -sorted-seq-from
-                                 :append                [[cljs.core.ISorted
+                                 :append                [[cljs.core/ISorted
                                                           (-sorted-seq [S ASCENDING?]
                                                             ((if ASCENDING? -seq -rseq) S))]]}}
 
