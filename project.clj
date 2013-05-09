@@ -10,4 +10,9 @@
   :cljsbuild
   {:builds         {:repl
                     {:jar               true
-                     :source-paths      ["src-cljs"]}}})
+                     :source-paths      ["src-cljs"]}}}
+
+  :profiles
+  {:dev
+   ;; explicitely state the cljsbuild so we can test in repl
+   {:dependencies  [[cljsbuild          "0.3.0"]]}})
