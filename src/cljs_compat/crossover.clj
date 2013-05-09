@@ -40,13 +40,21 @@
    only when there are :refer or :only"
   [FN]
   (fn [USE [NS & REST :as FORM]]
-    (if (and (= NS :clojure.test)
-             (empty? (filter #{:refer :only} REST)))
-      (FN (ns-macro-map USE USE) FORM)
+    (if (= NS 'clojure.test)
+      (let [[& {:keys [as refer only]}] REST
+            n  'cemerick.cljs.test]
+        (concat
+         (if as
+           (FN :require [n :as as])
+           (FN :require [n]))
+         (when (and only (= :use USE))
+           (FN :use-macros [n :only only]))
+         (when (and refer (= :require USE))
+           (FN :require-macros [n :refer refer]))))
       (FN USE FORM))))
 
-(defn ns-noop
-  [USE FORM] [[USE FORM]])
+(defn ns-noop [USE FORM]
+  [[USE FORM]])
 
 (def ns-default-transformer
   (-> ns-noop
@@ -62,7 +70,7 @@
         rebuild   (fn [u forms]
                     (mapcat #(if (coll? %)
                                (MW u %)
-                               (MW [%]))
+                               (MW u [%]))
                             forms))
 
         result    (->> (mapcat (fn [[u & forms :as x]]
@@ -97,11 +105,12 @@
     clojure.lang.PersistentHashSet      cljs.lang/PersistentHashSet,
     clojure.lang.PersistentTreeSet      cljs.lang/PersistentTreeSet})
 
-(def namespace-map
-  '{clojure.test                        cemerick.clojure.test})
-
 (def expression-map
-  {})
+  '{java.lang.Exception                 js/Error,
+    java.lang.AssertionError            js/Error
+
+    java.util.Date                      js/Date
+    java.util.Date.                     js/Date.})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;
