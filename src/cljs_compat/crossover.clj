@@ -127,11 +127,14 @@
     clojure.lang.PersistentHashMap      cljs.lang/PersistentHashMap,
     clojure.lang.PersistentTreeMap      cljs.lang/PersistentTreeMap
     clojure.lang.PersistentHashSet      cljs.lang/PersistentHashSet,
-    clojure.lang.PersistentTreeSet      cljs.lang/PersistentTreeSet})
+    clojure.lang.PersistentTreeSet      cljs.lang/PersistentTreeSet
+    clojure.lang.PersistentQueue        cljs.lang/PersistentQueue})
 
 (def expression-map
   '{java.lang.Exception                 js/Error,
-    java.lang.AssertionError            js/Error
+    java.lang.AssertionError            js/Error,
+
+    clojure.lang.PersistentQueue/EMPTY  cljs.lang.PersistentQueue/EMPTY
 
     java.util.Date                      js/Date
     java.util.Date.                     js/Date.})
