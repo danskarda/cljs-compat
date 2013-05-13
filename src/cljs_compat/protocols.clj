@@ -150,7 +150,7 @@
     clojure.lang.IDeref
     {deref                      -deref}
 
-    clojure.lang.IDerefWithTimeout
+    clojure.lang.IBlockingDeref
     {deref                      -deref-with-timeout}
 
     clojure.lang.IMeta
