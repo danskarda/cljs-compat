@@ -15,88 +15,112 @@
 (def ns-macro-map
   {:use :use-macros, :require :require-macros})
 
-(defn wrap-ns-dot-macro
-  "Middleware for transforming ns :uses and :requires.
-   Transforms (:use blahblah.macro) to (:use-macro...)"
-  [FN]
-  (fn [USE [NS :as FORM]]
-    (if (and (ns-macro-map USE)
-             (-> NS name (.endsWith ".macro")))
-      (FN (ns-macro-map USE) FORM)
-      (FN USE FORM))))
+(defn ns-use-dot-macro
+  "Transforms [:use [foo.bar.macro]] into [:use-macro ...]
+   For all namespaces ending with .macro. Same for require macros"
+  [[USE [NS & _ :as SPEC] :as FORM]]
+  (if (and (ns-macro-map USE)
+           (-> NS name (.endsWith ".macro")))
+    [(ns-macro-map USE) SPEC]
+    FORM))
 
-(defn wrap-ns-maybe-macro-cljs
-  "Middleware which adds -cljs namespaces (if they exists)"
-  [FN]
-  (fn [USE FORM]
-    (map (fn [[ur n :as f]]
-           (if (#{:use-macros :require-macros} ur)
-             [ur (update-in n [0] maybe-cljs)]
-             f))
-         (FN USE FORM))))
+(defn ns-maybe-macro-cljs
+  "If USE is :use-macros, adds -cljs suffix to namespaces (if ns exists).
+   Same for :require-macros"
+  [[USE SPECS :as FORM]]
+  (if (#{:use-macros :require-macros} USE)
+    [USE (update-in SPECS [0] maybe-cljs)]
+    FORM))
 
-(defn wrap-ns-clojure-test
+(defn ns-clojure-test
   "Middleware for transforming clojure.test to cemerick.cljs.test
    only when there are :refer or :only"
-  [FN]
-  (fn [USE [NS & REST :as FORM]]
-    (if (= NS 'clojure.test)
-      (let [[& {:keys [as refer only]}] REST
-            n  'cemerick.cljs.test]
-        (concat
-         (if as
-           (FN :require [n :as as])
-           (FN :require [n]))
-         (when (and only (= :use USE))
-           (FN :use-macros [n :only only]))
-         (when (and refer (= :require USE))
-           (FN :require-macros [n :refer refer]))))
-      (FN USE FORM))))
+  [[USE [NS & REST :as SPEC] :as FORM]]
+  (if (= NS 'clojure.test)
+    (let [[& {:keys [as refer only]}] REST
+          n  'cemerick.cljs.test]
+      (concat
+       (when as
+         [[:require [n :as as]]])
+       (when (and only (= :use USE))
+         [[:use-macros [n :only only]]])
+       (when (and refer (= :require USE))
+         [[:require-macros [n :refer refer]]])
+       (when (and (not as) (not refer) (not only))
+         [[:require [n]]])))
+    [FORM]))
 
-(defn ns-noop [USE FORM]
-  [[USE FORM]])
+(defn ns-make-safe-fn
+  [FN IDENTITY]
+  (fn [[_ SPEC :as FORM]]
+    (if (coll? SPEC)
+      (FN FORM)
+      (IDENTITY FORM))))
 
-(def ns-default-transformer
-  (-> ns-noop
-      wrap-ns-maybe-macro-cljs
-      wrap-ns-dot-macro
-      wrap-ns-clojure-test))
+(defn wrap-ns-map [FN]
+  (fn [SPECS] (map (ns-make-safe-fn FN identity) SPECS)))
+
+(defn wrap-ns-mapcat [FN]
+  (fn [SPECS] (mapcat (ns-make-safe-fn FN vector) SPECS)))
+
+(defn ns-inject-cljs-compat
+  "Injects cljs-compat.macros compatibility if it is not already there"
+  [SPECS]
+  (if (some (fn [[_ SPEC]]
+              (and (coll? SPEC)
+                   ('#{cljs-compat.macro cljs-compat.macro-cljs} (first SPEC))))
+            SPECS)
+    SPECS
+    (let [defs '[deftype defrecord extend-type extend-prototype]]
+      (concat SPECS
+              [[:refer-clojure  :exclude defs]
+               [:require-macros ['cljs-compat.macro-cljs :refer defs]]]))))
+
+(def ns-conservative-transformer
+  (comp (wrap-ns-map ns-maybe-macro-cljs)
+        (wrap-ns-map ns-use-dot-macro)))
+
+(def ns-progressive-transformer
+  (comp ns-inject-cljs-compat
+        (wrap-ns-mapcat ns-clojure-test)
+        ns-conservative-transformer))
+
+(require '[clojure.pprint :as pprint])
 
 (defn transform-ns-form
-  [MW NAME & ARGS]
-  (let [docstring (when (string? (first ARGS)) (first ARGS))
-        forms     (if docstring (next ARGS) ARGS)
+  ([MW] ;; curry
+     (fn [& REST] (apply transform-ns-form MW REST)))
+  ([MW NAME & ARGS]
+     (let [docstring (when (string? (first ARGS)) (first ARGS))
+           forms     (if docstring (next ARGS) ARGS)
 
-        rebuild   (fn [u forms]
-                    (mapcat #(if (coll? %)
-                               (MW u %)
-                               (MW u [%]))
-                            forms))
+           forms     (reduce
+                      (fn [result [k & parts :as spec]]
+                        (into result
+                              (if (#{:use :require :use-macros :require-macros} k)
+                                (map #(if (coll? %) [k %] [k [%]]) parts)
+                                [spec])))
+                      [] forms)
 
-        result    (->> (mapcat (fn [[u & forms :as x]]
-                                 (if (#{:use :require} u)
-                                   (rebuild u forms)
-                                   [x]))
-                               forms)
-                       (map (fn [[k & r]] {k r}))
-                       (apply merge-with concat)
-                       (map (fn [[k r]] (cons k r)))
-                       seq )]
-    (if docstring
-      (list* 'ns NAME docstring result)
-      (list* 'ns NAME result))))
+           result       (doto (MW forms)
+                          doall)
+           ]
+       (if docstring
+         (list* 'ns NAME docstring result)
+         (list* 'ns NAME result)))))
 
-(def toplevel-map
-  {'ns (fn [N & R] (apply transform-ns-form ns-default-transformer N R))})
+(def toplevel-conservative
+  {'ns (transform-ns-form ns-conservative-transformer)})
+
+(def toplevel-progressive
+  {'ns (transform-ns-form ns-progressive-transformer)})
 
 (defn transform-toplevel
-  ([MAP SEQ]
-     (map #(if-let [tf (and (coll? %) (get MAP (first %)))]
-             (apply tf (next %))
-             %)
-          SEQ))
-  ([SEQ]
-     (transform-toplevel toplevel-map SEQ)))
+  [MAP SEQ]
+  (map #(if-let [tf (and (coll? %) (get MAP (first %)))]
+          (apply tf (next %))
+          %)
+       SEQ))
 
 (def type-map
   '{clojure.lang.PersistentArrayMap     cljs.lang/PersistentArrayMap,
@@ -126,11 +150,42 @@
 
    For all expressions (either quoted or unquoted) transformogrify
    tries remap using EXPR map"
-  ([TOPLEVEL EXPR SOURCE]
-     (->> SOURCE
-          cbuild/read-forms
-          (transform-toplevel TOPLEVEL)
-          (map #(walk/postwalk-replace EXPR %))
-          cbuild/write-forms))
-  ([SOURCE]
-     (transmogrify toplevel-map expression-map SOURCE)))
+  [TOPLEVEL EXPR SOURCE]
+  (->> SOURCE
+       cbuild/read-forms
+       (transform-toplevel TOPLEVEL)
+       (map #(walk/postwalk-replace EXPR %))
+       cbuild/write-forms))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;     Crossovers
+;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(defn conservative
+  "Apply conservative transformation on source code:
+
+    1) transform use/require to use-require macros for namespaces which
+       ends with .macro
+
+    2) add -cljs suffix for :use-macros iff namespace exists"
+  [SOURCE]
+  (transmogrify toplevel-conservative {} SOURCE))
+
+(defn progressive
+  "Apply all transformation on source code:
+
+    1) transform use/require to use-require macros for namespaces which
+       ends with .macro
+
+    2) add -cljs suffix for :use-macros iff namespace exists
+
+    3) inject cljs-compat.macros if it is not already used
+
+    4) transform clojure.test into cemerick.cljs.test
+
+    5) transform basic types, exceptions and tests"
+  [SOURCE]
+  (transmogrify toplevel-progressive (merge type-map expression-map) SOURCE))

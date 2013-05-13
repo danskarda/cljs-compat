@@ -40,7 +40,7 @@
             IEquiv
             (-equiv [X Y] false)
 
-            cljs.core.ILookup
+            cljs.core/ILookup
             (-lookup [T I] false)
             (-lookup [T I D] D))))
 
@@ -50,10 +50,10 @@
             Ignored
             (should-be-left-untouched [X] nil)
 
-            cljs.core.ISeqable
+            cljs.core/ISeqable
             (-seq [X] X)
 
-            cljs.core.ISorted
+            cljs.core/ISorted
             (-sorted-seq [S ASCENDING?] ((if ASCENDING? -seq -rseq) S))
             (-sorted-seq-from [SC KEY ASCENDING?] nil)))))
 
