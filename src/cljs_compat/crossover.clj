@@ -40,14 +40,13 @@
     (let [[& {:keys [as refer only]}] REST
           n  'cemerick.cljs.test]
       (concat
-       (when as
-         [[:require [n :as as]]])
+       (if as
+         [[:require [n :as as]]]
+         [[:require [n]]])
        (when (and only (= :use USE))
          [[:use-macros [n :only only]]])
        (when (and refer (= :require USE))
-         [[:require-macros [n :refer refer]]])
-       (when (and (not as) (not refer) (not only))
-         [[:require [n]]])))
+         [[:require-macros [n :refer refer]]])))
     [FORM]))
 
 (defn ns-make-safe-fn
@@ -102,9 +101,11 @@
                                 [spec])))
                       [] forms)
 
-           result       (doto (MW forms)
-                          doall)
-           ]
+           result     (->> (MW forms)
+                           (map (fn [[k & r]] {k r}))
+                           (apply merge-with concat)
+                           (map (fn [[k r]] (cons k r)))
+                           seq )]
        (if docstring
          (list* 'ns NAME docstring result)
          (list* 'ns NAME result)))))
