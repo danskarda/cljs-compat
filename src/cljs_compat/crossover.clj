@@ -135,7 +135,7 @@
   '{java.lang.Exception                 js/Error,
     java.lang.AssertionError            js/Error,
 
-    clojure.lang.PersistentQueue/EMPTY  cljs.lang.PersistentQueue/EMPTY
+    clojure.lang.PersistentQueue/EMPTY  cljs.core.PersistentQueue/EMPTY
 
     java.util.Date                      js/Date
     java.util.Date.                     js/Date.})
