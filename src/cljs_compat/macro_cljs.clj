@@ -37,9 +37,10 @@
 
 (defn translate [PROTO [NAME & REST :as ORIG]]
   (let [{:keys [method protocol append]} (proto/transmogrify PROTO NAME)]
-    (concat (if (and protocol method)
-              [[protocol (cons method REST)]]
-              [[PROTO ORIG]])
+    (concat (cond
+             (and protocol method)      [[protocol (cons method REST)]]
+             protocol                   nil ; protocol and NOT method
+             :else                      [[PROTO ORIG]])
             append)))
 
 (defn zip-headers

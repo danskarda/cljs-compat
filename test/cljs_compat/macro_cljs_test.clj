@@ -77,4 +77,15 @@
 
              Object
              (bazBar [] 2)
-             (toString [x] x))])))
+             (toString [x] x))]))
+
+  (is (= (-> '(cljs-compat.macro-cljs/deftype FooBar [foo bar]
+                Object
+                (equals [x y] nil)
+                clojure.lang.IPersistentCollection
+                (equiv [x y] nil))
+             macroexpand-1)
+         '(clojure.core/deftype FooBar [foo bar]
+            IEquiv
+            (-equiv [x y] nil)))
+      "Removing a protocol"))
