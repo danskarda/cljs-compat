@@ -14,8 +14,8 @@
 (defmacro in-clojurescript [& BODY]
   nil)
 
-(defmacro in-lang [& {:keys [clojure]}]
-  clojure)
+(defmacro in-lang [& {:keys [clj clojure]}]
+  (or clj clojure))
 
 (defmacro deftype
   [NAME FIELDS & OPTS+SPECS]
