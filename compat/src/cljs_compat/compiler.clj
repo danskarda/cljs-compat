@@ -5,6 +5,6 @@
 (defn cljs-compiler?
   "Return true if we are inside CLJS compiler"
   []
-  (cond-> (resolve 'cljs.analyzer/*cljs-ns*)
+  (some-> (resolve 'cljs.analyzer/*cljs-file*)
           deref
           (and true)))

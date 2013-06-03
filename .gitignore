@@ -1,4 +1,6 @@
 /target
+/crossover/target
+/compat/target
 /lib
 /classes
 /checkouts

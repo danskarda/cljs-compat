@@ -135,6 +135,7 @@
   '{java.lang.Exception                 js/Error,
     java.lang.AssertionError            js/Error,
 
+    clojure.lang.MapEntry.              vector
     clojure.lang.PersistentQueue/EMPTY  cljs.core.PersistentQueue/EMPTY
 
     java.util.Date                      js/Date
@@ -155,8 +156,9 @@
    For all expressions (either quoted or unquoted) transformogrify
    tries remap using EXPR map"
   [TOPLEVEL EXPR SOURCE]
-  (->> SOURCE
-       cbuild/read-forms
+  (->> (if (string? SOURCE)
+         (-> SOURCE cbuild/remove-cljsbuild-comments cbuild/read-forms)
+         SOURCE)
        (transform-toplevel TOPLEVEL)
        (map #(walk/postwalk-replace EXPR %))
        cbuild/write-forms))
