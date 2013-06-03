@@ -121,7 +121,7 @@ You got the point. Luckily number and order of parameters is the same.
 `defrecord`, `extend-type` and `extend-protocol` macros. These macros
 translate all core protocol and method names and update hints. 
 
-See [protocols.clj][compat/src/cljs_compat/protocols.clj] for detailed
+See [protocols.clj](compat/src/cljs_compat/protocols.clj) for detailed
 mapping.
 
 ```clj
@@ -201,7 +201,7 @@ conservtive plus several other changes:
   `java.lang.Error` to `js/Error`,
   `clojure.lang.PersistentQueue/EMPTY` to
   `cljs.core.PersistentQueue/EMPTY`, `(java.util.Date.)` to
-  `(js/Date.) etc
+  `(js/Date.)` etc
 
 * Replace clojure.test dependency with cemerick.cljs.test
 
@@ -256,14 +256,19 @@ for example:
 There is nothing cljs-compat can do about this kind of differences.
 You have to keep them in mind while coding platform independent code.
 
-[cljsbuild]:			https://github.com/emezeske/lein-cljsbuild/
-[cljsbuild-patched]:	https://github.com/danskarda/lein-cljsbuild/
-[piggie]:				https://github.com/cemerick/piggieback
+### Additional resources
+
+A [presentation][ppt] from Prague Lambda Group.
+
+[cljsbuild]: https://github.com/emezeske/lein-cljsbuild/ "CljsBuild"
+[cljsbuild-patched]: https://github.com/danskarda/lein-cljsbuild/ "Patched CljsBuild"
+[piggie]: https://github.com/cemerick/piggieback "Piggieback"
+[ppt]: http://goo.gl/Xprbm "A presentation"
 
 
 ## License
 
-Copyright © 2013 Daniel Skarda
+Copyright (c) 2013 Daniel Skarda
 
 Distributed under the Eclipse Public License, the same as Clojure.
 
