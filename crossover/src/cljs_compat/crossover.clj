@@ -84,8 +84,6 @@
         (wrap-ns-mapcat ns-clojure-test)
         ns-conservative-transformer))
 
-(require '[clojure.pprint :as pprint])
-
 (defn transform-ns-form
   ([MW] ;; curry
      (fn [& REST] (apply transform-ns-form MW REST)))
